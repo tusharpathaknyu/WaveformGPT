@@ -661,10 +661,16 @@ class ESP32Bridge:
     Bridge to connect ESP32 hardware to WaveformBuddy.
     
     The ESP32 sends:
-    - Images via HTTP POST
-    - Audio via WebSocket
+    - Images via HTTP POST to /circuit or /waveform
+    - Audio via HTTP POST to /audio
+    - Questions via HTTP POST to /ask
     
     This server receives them and forwards to WaveformBuddy.
+    
+    Usage:
+        buddy = WaveformBuddy()
+        bridge = ESP32Bridge(buddy, port=8080)
+        bridge.start()  # Blocks, serving requests
     """
     
     def __init__(self, buddy: WaveformBuddy, port: int = 8080):
@@ -675,25 +681,91 @@ class ESP32Bridge:
         """Start the HTTP server for ESP32 communication"""
         from http.server import HTTPServer, BaseHTTPRequestHandler
         import json
+        import wave
+        import struct
         
         buddy = self.buddy
         
         class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                """Handle GET requests (ping, status)"""
+                if self.path == '/ping':
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(b'pong')
+                    
+                elif self.path == '/status':
+                    status = {
+                        'circuit_captured': buddy.context.get_latest_circuit() is not None,
+                        'waveform_captured': buddy.context.get_latest_waveform() is not None,
+                        'is_watching': buddy.is_watching,
+                    }
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(status).encode('utf-8'))
+                    
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+            
             def do_POST(self):
                 content_length = int(self.headers['Content-Length'])
                 post_data = self.rfile.read(content_length)
                 
                 if self.path == '/circuit':
                     buddy.capture_circuit(post_data)
+                    desc = buddy.context.get_latest_circuit().description[:100]
                     self.send_response(200)
                     self.end_headers()
-                    self.wfile.write(b'OK')
+                    self.wfile.write(desc.encode('utf-8'))
                     
                 elif self.path == '/waveform':
                     buddy.capture_waveform(post_data)
+                    desc = buddy.context.get_latest_waveform().description[:200]
                     self.send_response(200)
                     self.end_headers()
-                    self.wfile.write(b'OK')
+                    self.wfile.write(desc.encode('utf-8'))
+                    
+                elif self.path == '/audio':
+                    # Process raw audio from ESP32
+                    sample_rate = int(self.headers.get('X-Sample-Rate', 16000))
+                    
+                    # Convert raw audio to WAV for Whisper
+                    wav_buffer = io.BytesIO()
+                    with wave.open(wav_buffer, 'wb') as wf:
+                        wf.setnchannels(1)
+                        wf.setsampwidth(2)  # 16-bit
+                        wf.setframerate(sample_rate)
+                        wf.writeframes(post_data)
+                    
+                    wav_buffer.seek(0)
+                    
+                    # Transcribe with Whisper
+                    try:
+                        transcript = buddy.client.audio.transcriptions.create(
+                            model="whisper-1",
+                            file=("audio.wav", wav_buffer, "audio/wav")
+                        )
+                        question = transcript.text.strip()
+                        print(f"[ESP32 Voice] {question}")
+                        
+                        # Check for commands
+                        if not buddy._process_voice_command(question.lower()):
+                            # It's a question
+                            response = buddy.ask(question)
+                        else:
+                            response = "OK"
+                        
+                        self.send_response(200)
+                        self.end_headers()
+                        self.wfile.write(response.encode('utf-8'))
+                        
+                    except Exception as e:
+                        print(f"[Audio Error] {e}")
+                        self.send_response(500)
+                        self.end_headers()
+                        self.wfile.write(str(e).encode('utf-8'))
                     
                 elif self.path == '/ask':
                     question = post_data.decode('utf-8')
@@ -709,8 +781,20 @@ class ESP32Bridge:
             def log_message(self, format, *args):
                 buddy._status(f"ESP32: {args[0]}")
         
+        print(f"\n{'='*60}")
+        print(f"  WaveformBuddy ESP32 Bridge")
+        print(f"  Listening on http://0.0.0.0:{self.port}")
+        print(f"{'='*60}")
+        print(f"\nEndpoints:")
+        print(f"  POST /circuit  - Upload circuit image")
+        print(f"  POST /waveform - Upload waveform image")
+        print(f"  POST /audio    - Upload voice recording")
+        print(f"  POST /ask      - Send text question")
+        print(f"  GET  /ping     - Check server status")
+        print(f"  GET  /status   - Get buddy status")
+        print(f"\n{'='*60}\n")
+        
         server = HTTPServer(('0.0.0.0', self.port), Handler)
-        print(f"ESP32 Bridge listening on port {self.port}")
         server.serve_forever()
 
 
