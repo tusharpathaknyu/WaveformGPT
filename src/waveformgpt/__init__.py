@@ -138,7 +138,20 @@ from waveformgpt.debug import (
     StateMachineAnalyzer,
 )
 
-__version__ = "0.5.0"
+# WaveformBuddy - Hardware debugging companion
+try:
+    from waveformgpt.buddy import (
+        WaveformBuddy,
+        BuddyContext,
+        Capture,
+        CaptureType,
+        ESP32Bridge,
+    )
+    _HAS_BUDDY = True
+except ImportError:
+    _HAS_BUDDY = False
+
+__version__ = "0.6.0"
 __all__ = [
     # Core
     "WaveformChat",
@@ -237,4 +250,10 @@ __all__ = [
     "DebugSession",
     "DebugFinding",
     "StateMachineAnalyzer",
+    # WaveformBuddy Hardware Companion
+    "WaveformBuddy",
+    "BuddyContext",
+    "Capture",
+    "CaptureType",
+    "ESP32Bridge",
 ]
