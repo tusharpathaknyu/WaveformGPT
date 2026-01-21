@@ -383,3 +383,149 @@ def start_voice_session(vcd_file: str, **kwargs):
     config = VoiceConfig(**kwargs)
     voice = VoiceChat(vcd_file, config)
     voice.start()
+
+
+class SpeakingChat:
+    """
+    Type your questions, hear AI speak the answers.
+    
+    No microphone required! Uses AI-generated voice for responses.
+    
+    Usage:
+        chat = SpeakingChat("simulation.vcd")
+        chat.start()  # Type questions, hear spoken answers
+        
+        # Or single query:
+        chat.ask("What's the clock frequency?")  # Speaks the answer
+    """
+    
+    def __init__(self, vcd_file: str, 
+                 voice: str = "alloy",
+                 tts_provider: str = "openai"):
+        """
+        Args:
+            vcd_file: Path to VCD file
+            voice: Voice to use (alloy, echo, fable, onyx, nova, shimmer)
+            tts_provider: TTS provider ("openai" or "pyttsx3" for offline)
+        """
+        self.vcd_file = vcd_file
+        
+        from waveformgpt import WaveformChat
+        self.chat = WaveformChat(vcd_file, use_llm=True)
+        self.tts = TextToSpeech(tts_provider, voice)
+        self.speak_responses = True
+    
+    def ask(self, question: str, speak: bool = True) -> str:
+        """
+        Ask a question and optionally speak the response.
+        
+        Args:
+            question: Your question about the waveform
+            speak: Whether to speak the response (default True)
+        
+        Returns:
+            The text response
+        """
+        print(f"💭 {question}")
+        
+        response = self.chat.ask(question)
+        answer = response.content if hasattr(response, 'content') else str(response)
+        
+        print(f"🤖 {answer}")
+        
+        if speak and self.speak_responses:
+            answer_clean = self._clean_for_speech(answer)
+            self.tts.speak(answer_clean)
+        
+        return answer
+    
+    def _clean_for_speech(self, text: str) -> str:
+        """Clean text for natural speech."""
+        import re
+        
+        # Remove emojis
+        text = re.sub(r'[🤖📝💡✓✗▀▁🔍📊⚡🎯]', '', text)
+        
+        # Remove markdown
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+        text = re.sub(r'\*([^*]+)\*', r'\1', text)
+        text = re.sub(r'`([^`]+)`', r'\1', text)
+        text = re.sub(r'```[^`]*```', '', text, flags=re.DOTALL)
+        
+        # Remove LaTeX
+        text = re.sub(r'\\\[.*?\\\]', '', text, flags=re.DOTALL)
+        text = re.sub(r'\$[^$]+\$', '', text)
+        
+        # Clean up whitespace
+        text = text.replace('\n\n', '. ')
+        text = text.replace('\n', ' ')
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Limit for TTS
+        if len(text) > 500:
+            text = text[:500] + "... I can provide more details if you ask."
+        
+        return text.strip()
+    
+    def start(self):
+        """Start interactive session - type questions, hear answers."""
+        print("=" * 60)
+        print("🔊 WaveformGPT Speaking Mode")
+        print("=" * 60)
+        print(f"VCD: {self.vcd_file}")
+        print("Type your questions. I'll speak the answers!")
+        print("Commands: 'mute' (text only), 'unmute', 'quit'")
+        print("=" * 60)
+        
+        # Greeting
+        signals = list(self.chat.parser.header.signals.values())
+        greeting = f"Hello! I've loaded your waveform with {len(signals)} signals. What would you like to know?"
+        print(f"🤖 {greeting}")
+        self.tts.speak(greeting)
+        
+        while True:
+            try:
+                question = input("\n💬 You: ").strip()
+                
+                if not question:
+                    continue
+                
+                if question.lower() in ('quit', 'exit', 'q'):
+                    farewell = "Goodbye! Happy debugging!"
+                    print(f"🤖 {farewell}")
+                    self.tts.speak(farewell)
+                    break
+                
+                if question.lower() == 'mute':
+                    self.speak_responses = False
+                    print("🔇 Muted - responses will be text only")
+                    continue
+                
+                if question.lower() == 'unmute':
+                    self.speak_responses = True
+                    print("🔊 Unmuted - I'll speak responses again")
+                    self.tts.speak("I can speak again!")
+                    continue
+                
+                self.ask(question)
+                
+            except KeyboardInterrupt:
+                print("\n👋 Goodbye!")
+                break
+            except Exception as e:
+                print(f"Error: {e}")
+
+
+def start_speaking_session(vcd_file: str, voice: str = "alloy"):
+    """
+    Start a speaking session - no microphone needed!
+    
+    Type your questions, hear AI speak the answers.
+    
+    Args:
+        vcd_file: Path to VCD file
+        voice: Voice to use (alloy, echo, fable, onyx, nova, shimmer)
+    """
+    chat = SpeakingChat(vcd_file, voice=voice)
+    chat.start()
+

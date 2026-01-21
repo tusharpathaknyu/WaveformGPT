@@ -90,6 +90,13 @@ from waveformgpt.live import (
     create_live_session,
 )
 
+# Vision-based analysis (LLM sees waveforms as images)
+from waveformgpt.vision import (
+    WaveformVision,
+    VisionAnalysis,
+    LiveVisionMonitor,
+)
+
 # Real-world integrations
 from waveformgpt.integrations import (
     # Simulation runners
@@ -200,6 +207,10 @@ __all__ = [
     "FIFOSource",
     "WebSocketSource",
     "create_live_session",
+    # Vision Analysis
+    "WaveformVision",
+    "VisionAnalysis", 
+    "LiveVisionMonitor",
     # Integrations
     "VerilatorRunner",
     "IcarusRunner",
