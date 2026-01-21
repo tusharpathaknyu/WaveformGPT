@@ -90,7 +90,48 @@ from waveformgpt.live import (
     create_live_session,
 )
 
-__version__ = "0.4.0"
+# Real-world integrations
+from waveformgpt.integrations import (
+    # Simulation runners
+    VerilatorRunner,
+    IcarusRunner,
+    CocotbRunner,
+    SimulationResult,
+    # CI/CD
+    WaveformCI,
+    CICheckResult,
+    # GTKWave
+    GTKWaveIntegration,
+    # Notifications
+    SlackNotifier,
+    GitHubIntegration,
+    # Reports
+    ReportGenerator,
+    # Convenience
+    run_simulation_and_analyze,
+    ci_check_waveform,
+)
+
+# Regression testing
+from waveformgpt.regression import (
+    WaveformRegression,
+    RegressionResult,
+    SignalDiff,
+    CoverageAnalyzer,
+    CoverageResult,
+    GoldenModel,
+    TestSuite,
+)
+
+# Debug utilities
+from waveformgpt.debug import (
+    WaveformDebugger,
+    DebugSession,
+    DebugFinding,
+    StateMachineAnalyzer,
+)
+
+__version__ = "0.5.0"
 __all__ = [
     # Core
     "WaveformChat",
@@ -159,4 +200,30 @@ __all__ = [
     "FIFOSource",
     "WebSocketSource",
     "create_live_session",
+    # Integrations
+    "VerilatorRunner",
+    "IcarusRunner",
+    "CocotbRunner",
+    "SimulationResult",
+    "WaveformCI",
+    "CICheckResult",
+    "GTKWaveIntegration",
+    "SlackNotifier",
+    "GitHubIntegration",
+    "ReportGenerator",
+    "run_simulation_and_analyze",
+    "ci_check_waveform",
+    # Regression
+    "WaveformRegression",
+    "RegressionResult",
+    "SignalDiff",
+    "CoverageAnalyzer",
+    "CoverageResult",
+    "GoldenModel",
+    "TestSuite",
+    # Debug
+    "WaveformDebugger",
+    "DebugSession",
+    "DebugFinding",
+    "StateMachineAnalyzer",
 ]

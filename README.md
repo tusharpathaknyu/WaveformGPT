@@ -199,6 +199,118 @@ Explain what happens at t=1500ns
 
 ## 🔧 Advanced Usage
 
+### 🔧 CI/CD Integration (NEW!)
+```python
+from waveformgpt import WaveformCI
+
+# Run automated waveform checks in CI/CD pipelines
+ci = WaveformCI("simulation.vcd", use_llm=True)
+
+# Add checks
+ci.add_check("clock_present", lambda chat: chat.ask("Is there a clock?"))
+ci.add_check("no_errors", lambda chat: chat.ask("Any errors?"), 
+             lambda r: "no" in r.lower())
+ci.add_protocol_check("axi", signal_prefix="m_axi_")
+
+# Run and get exit code
+results = ci.run_all()
+ci.generate_junit_xml(results, "results.xml")  # For Jenkins/GitHub Actions
+exit_code = ci.print_report(results)
+```
+
+Use in GitHub Actions:
+```yaml
+- name: Analyze Waveforms
+  run: |
+    python -c "
+    from waveformgpt.integrations import ci_check_waveform
+    exit(ci_check_waveform('sim.vcd', [
+        {'name': 'clock', 'question': 'Is clock present?'},
+        {'name': 'errors', 'question': 'Any errors?'}
+    ]))"
+```
+
+### 🔄 Regression Testing (NEW!)
+```python
+from waveformgpt import WaveformRegression, CoverageAnalyzer
+
+# Compare waveforms for regressions
+reg = WaveformRegression(tolerance_ns=1)
+result = reg.compare("golden.vcd", "new.vcd")
+print(result.summary)  # Shows differences
+
+# Coverage analysis
+cov = CoverageAnalyzer("simulation.vcd")
+cov.add_point("fifo_full", "full", "value == 1")
+cov.add_toggle_coverage("clk")
+report = cov.analyze()
+print(f"Coverage: {report.coverage_percent:.1f}%")
+```
+
+### 🔍 Debugging Tools (NEW!)
+```python
+from waveformgpt import WaveformDebugger, StateMachineAnalyzer
+
+dbg = WaveformDebugger("simulation.vcd", use_llm=True)
+
+# Trace signal to find root cause
+dbg.trace_signal("error", target_value=1)
+
+# Analyze window around failure
+window = dbg.analyze_window(1523, window=100)
+
+# Find glitches
+glitches = dbg.find_glitches("data", min_width=2)
+
+# Find setup/hold violations
+violations = dbg.find_metastability("data", "clk", setup_time=1)
+
+# AI-powered root cause analysis
+dbg.explain_failure(error_signal="error", error_time=1523)
+
+# State machine analysis
+fsm = StateMachineAnalyzer("simulation.vcd", "state")
+fsm.learn_states()
+issues = fsm.find_issues()
+fsm.print_summary()  # Shows time spent in each state
+```
+
+### 📣 Team Notifications (NEW!)
+```python
+from waveformgpt import SlackNotifier, GitHubIntegration
+
+# Slack alerts
+slack = SlackNotifier("https://hooks.slack.com/...")
+slack.send_violation(
+    title="Protocol Violation",
+    details="AXI handshake timeout",
+    vcd_file="sim.vcd", time=1523
+)
+slack.send_ci_results(results, "simulation.vcd")
+
+# GitHub issue creation
+gh = GitHubIntegration(token="ghp_...", repo="user/repo")
+gh.create_violation_issue(
+    violation_type="Setup Timing Violation",
+    details="Data changed 0.5ns before clock edge",
+    vcd_file="simulation.vcd"
+)
+```
+
+### 📊 Report Generation (NEW!)
+```python
+from waveformgpt import ReportGenerator
+
+report = ReportGenerator("simulation.vcd", title="Verification Report")
+report.add_section("Overview", chat.ask("Summarize the simulation"))
+report.add_section("Protocol", chat.ask("Any protocol violations?"))
+report.add_ci_results(ci_results)
+report.add_waveform(["clk", "data", "valid"], title="Key Signals")
+
+report.generate_html("report.html")   # Beautiful HTML report
+report.generate_markdown("report.md")  # Markdown for GitHub
+```
+
 ### Protocol Checking
 ```python
 from waveformgpt import AXI4Checker, VCDParser
@@ -254,6 +366,11 @@ WaveformGPT/
 ├── src/waveformgpt/
 │   ├── chat.py          # Main chat interface
 │   ├── llm_engine.py    # LLM backends (OpenAI, Claude, Ollama)
+│   ├── voice.py         # Voice interface (STT/TTS)
+│   ├── live.py          # Live waveform streaming
+│   ├── integrations.py  # CI/CD, Slack, GitHub, reports
+│   ├── regression.py    # Regression & coverage testing
+│   ├── debug.py         # Debugging & FSM analysis
 │   ├── vcd_parser.py    # VCD file parsing
 │   ├── nl_parser.py     # Pattern-based NL parser
 │   ├── query_engine.py  # Query execution
@@ -264,10 +381,15 @@ WaveformGPT/
 │   ├── visualize.py     # ASCII/HTML visualization
 │   └── export.py        # Multi-format export
 ├── demo/
-│   ├── demo.vcd         # Sample waveform
-│   ├── run_demo.py      # Basic demo
-│   └── llm_demo.py      # LLM-powered demo
-└── tests/               # Test suite
+│   ├── demo.vcd           # Sample waveform
+│   ├── run_demo.py        # Basic demo
+│   ├── llm_demo.py        # LLM-powered demo
+│   ├── voice_demo.py      # Voice interface demo
+│   ├── live_demo.py       # Live streaming demo
+│   └── integration_demo.py # CI/CD & debug demo
+├── .github/workflows/
+│   └── waveform-ci.yml    # GitHub Actions example
+└── tests/                 # Test suite
 ```
 
 ## 🎓 How It Works

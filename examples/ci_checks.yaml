@@ -1,0 +1,76 @@
+# WaveformGPT CI Checks Configuration
+# Place this file at .waveformgpt/checks.yaml in your project
+
+# Define VCD files and their checks
+files:
+  - vcd: "sim/top_tb.vcd"
+    checks:
+      - name: clock_present
+        question: "Is there a valid clock signal? What is its frequency?"
+        
+      - name: reset_sequence
+        question: "Does reset follow proper sequence (assert for at least 10 cycles)?"
+        
+      - name: no_x_states
+        question: "Are there any X (unknown) states after reset deassertion?"
+
+  - vcd: "sim/fifo_tb.vcd"
+    checks:
+      - name: fifo_overflow
+        question: "Does the FIFO overflow flag ever assert unexpectedly?"
+        
+      - name: fifo_underflow  
+        question: "Does the FIFO underflow flag ever assert?"
+        
+      - name: data_integrity
+        question: "Does data_out match data_in with proper FIFO delay?"
+
+  - vcd: "sim/axi_tb.vcd"
+    checks:
+      - name: axi_handshake
+        question: "Do all AXI channels follow proper VALID/READY handshaking?"
+        
+      - name: axi_ordering
+        question: "Are AXI transactions completed in the correct order?"
+        
+      - name: axi_response
+        question: "Are all AXI responses OKAY (no SLVERR or DECERR)?"
+
+# Global checks applied to all VCD files
+global_checks:
+  - name: no_glitches
+    question: "Are there any suspicious glitches (pulses < 1ns) on critical signals?"
+    
+  - name: timing_clean
+    question: "Are there any setup or hold time violations visible in the waveform?"
+
+# Assertion-based checks (uses temporal assertion syntax)
+assertions:
+  - name: valid_stable
+    expression: "valid |=> ##[0:10] ready"
+    description: "Ready should respond within 10 cycles of valid"
+    
+  - name: error_never
+    expression: "always !error"
+    description: "Error signal should never assert"
+
+# Protocol-specific checks
+protocols:
+  - type: axi4
+    prefix: "m_axi_"
+    strict: true
+    
+  - type: wishbone
+    prefix: "wb_"
+    strict: false
+
+# Notification settings
+notifications:
+  slack:
+    webhook_env: "SLACK_WEBHOOK_URL"
+    on_failure: true
+    on_success: false
+    
+  github:
+    create_issues: true
+    labels: ["verification", "waveform-ci"]

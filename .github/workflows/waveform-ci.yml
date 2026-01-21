@@ -1,0 +1,173 @@
+# GitHub Actions workflow for WaveformGPT CI/CD
+# This workflow demonstrates how to use WaveformGPT in CI pipelines
+
+name: Waveform Analysis CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      vcd_file:
+        description: 'VCD file to analyze'
+        required: false
+        default: 'tests/fixtures/sample.vcd'
+
+jobs:
+  waveform-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install WaveformGPT
+        run: |
+          pip install -e .
+          pip install pyyaml  # For CI checks config
+          
+      - name: Run Simulation (if applicable)
+        if: hashFiles('Makefile') != ''
+        run: |
+          # Install Icarus Verilog for simulation
+          sudo apt-get update
+          sudo apt-get install -y iverilog
+          
+          # Run simulation if Makefile exists
+          make sim || echo "No simulation target"
+          
+      - name: Analyze Waveforms
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Find VCD files
+          VCD_FILES=$(find . -name "*.vcd" -type f | head -5)
+          
+          if [ -z "$VCD_FILES" ]; then
+            echo "No VCD files found, using sample"
+            VCD_FILES="${{ github.event.inputs.vcd_file || 'tests/fixtures/sample.vcd' }}"
+          fi
+          
+          # Run analysis on each VCD file
+          for vcd in $VCD_FILES; do
+            echo "Analyzing: $vcd"
+            python -c "
+from waveformgpt import WaveformChat
+from waveformgpt.integrations import WaveformCI
+
+chat = WaveformChat('$vcd', use_llm=True)
+print('Signals:', len(chat.parser.get_signals()))
+print(chat.ask('Give a brief summary of this waveform'))
+            " || echo "Analysis failed for $vcd"
+          done
+          
+      - name: Run Protocol Checks
+        if: hashFiles('.waveformgpt/checks.yaml') != ''
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python -c "
+import yaml
+from waveformgpt.integrations import WaveformCI
+
+with open('.waveformgpt/checks.yaml') as f:
+    config = yaml.safe_load(f)
+
+for file_config in config.get('files', []):
+    vcd_file = file_config['vcd']
+    ci = WaveformCI(vcd_file, use_llm=True)
+    
+    for check in file_config.get('checks', []):
+        ci.add_check(
+            check['name'],
+            lambda chat, q=check['question']: chat.ask(q)
+        )
+    
+    results = ci.run_all()
+    ci.generate_junit_xml(results, f'{vcd_file}.xml')
+    exit_code = ci.print_report(results)
+    
+    if exit_code != 0:
+        exit(1)
+          "
+          
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: waveform-results
+          path: |
+            **/*.xml
+            **/*_report.html
+            **/*_report.md
+            
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: "**/*.xml"
+
+  regression-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for baseline comparison
+          
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install WaveformGPT
+        run: pip install -e .
+        
+      - name: Download Baseline
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          name: baseline-waveforms
+          path: baseline/
+          if_no_artifact_found: warn
+          
+      - name: Compare Waveforms
+        run: |
+          python -c "
+import os
+from waveformgpt.regression import WaveformRegression
+
+reg = WaveformRegression(tolerance_ns=1)
+
+# Find matching VCD files
+for root, dirs, files in os.walk('.'):
+    for f in files:
+        if f.endswith('.vcd'):
+            test_file = os.path.join(root, f)
+            baseline_file = os.path.join('baseline', f)
+            
+            if os.path.exists(baseline_file):
+                print(f'Comparing: {f}')
+                result = reg.compare(baseline_file, test_file)
+                print(result.summary)
+                
+                if not result.passed:
+                    print('REGRESSION DETECTED!')
+                    exit(1)
+            else:
+                print(f'No baseline for: {f}')
+          "
+          
+      - name: Save New Baseline
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-waveforms
+          path: "**/*.vcd"
+          retention-days: 90
