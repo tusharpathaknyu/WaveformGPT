@@ -53,3 +53,6 @@ htmlcov/
 
 # GTKWave save files (generated)
 *.gtkw
+# Hardware credentials
+hardware/esp32_audio/esp32_audio.ino
+hardware/esp32_buddy/esp32_buddy.ino
