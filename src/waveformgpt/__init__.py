@@ -51,7 +51,22 @@ from waveformgpt.export import (
     export_to_cocotb,
 )
 
-__version__ = "0.2.0"
+# Optional LLM imports (require API keys)
+try:
+    from waveformgpt.llm_engine import (
+        WaveformLLM,
+        LLMBackend,
+        OpenAIBackend,
+        AnthropicBackend,
+        OllamaBackend,
+        get_llm_backend,
+        LLMResponse,
+    )
+    _HAS_LLM = True
+except ImportError:
+    _HAS_LLM = False
+
+__version__ = "0.3.0"
 __all__ = [
     # Core
     "WaveformChat",
@@ -98,4 +113,12 @@ __all__ = [
     "export_to_wavedrom",
     "export_to_systemverilog",
     "export_to_cocotb",
+    # LLM (optional)
+    "WaveformLLM",
+    "LLMBackend",
+    "OpenAIBackend",
+    "AnthropicBackend", 
+    "OllamaBackend",
+    "get_llm_backend",
+    "LLMResponse",
 ]

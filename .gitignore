@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Environment variables (NEVER commit!)
+.env
+.env.local
+.env.*.local
+
 # Distribution / packaging
 .Python
 build/
