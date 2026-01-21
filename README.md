@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
-> **Query simulation waveforms in plain English — now with LLM superpowers!**
+> **Query simulation waveforms in plain English — with LLM, Voice & Live streaming!**
 
-WaveformGPT lets you ask questions about VCD/FST waveforms in natural language and get precise answers. Works offline with pattern matching, or use AI for unlimited flexibility.
+WaveformGPT lets you **talk to your waveforms**. Ask questions in natural language (or by voice!), analyze live simulations, and get AI-powered insights.
 
 ## 🎯 The Problem
 
@@ -18,85 +18,130 @@ Debugging waveforms is tedious:
 **WaveformGPT makes it conversational:**
 
 ```
-You: "Show me when req went high but ack didn't follow within 10 cycles"
-WaveformGPT: Found 3 violations at cycles 1045, 8923, 15678
+🎤 You: "Hey WaveformGPT, what's the clock frequency?"
+🤖 WaveformGPT: "The clock frequency is 50MHz with a 50% duty cycle."
 
-You: "What's the average latency between valid and ready?"
-WaveformGPT: 4.7 cycles (min: 1, max: 23, std: 2.1)
+🎤 You: "Is there a handshake between req and ack?"
+🤖 WaveformGPT: "Yes! At 40ns req goes high, ack acknowledges at 70ns..."
 
-You: "Is there a glitch on the data bus?"  ← Requires LLM mode
-WaveformGPT: Yes, detected 2 glitches at t=1523ns and t=8901ns...
+🎤 You: "Alert me when error goes high"  
+🤖 WaveformGPT: [Monitoring...] 🚨 Alert! Error triggered at t=1523ns!
 ```
 
 ## 🚀 Features
 
-| Feature | Pattern Mode | LLM Mode |
-|---------|:------------:|:--------:|
-| Edge detection (rise/fall) | ✅ | ✅ |
-| Signal counting | ✅ | ✅ |
-| Timing measurements | ✅ | ✅ |
-| Protocol violations | ✅ | ✅ |
-| **Arbitrary questions** | ❌ | ✅ |
-| **Complex analysis** | ❌ | ✅ |
-| **Explanations** | ❌ | ✅ |
-| Works offline | ✅ | Ollama only |
-| Free | ✅ | Ollama only |
+| Feature | Pattern Mode | LLM Mode | Voice Mode | Live Mode |
+|---------|:------------:|:--------:|:----------:|:---------:|
+| Edge detection | ✅ | ✅ | ✅ | ✅ |
+| Timing analysis | ✅ | ✅ | ✅ | ✅ |
+| Arbitrary questions | ❌ | ✅ | ✅ | ✅ |
+| Voice input/output | ❌ | ❌ | ✅ | ✅ |
+| Live streaming | ❌ | ❌ | ❌ | ✅ |
+| Real-time alerts | ❌ | ❌ | ❌ | ✅ |
+| Works offline | ✅ | Ollama | ❌ | ✅ |
 
 ## 📦 Installation
 
 ```bash
 pip install waveformgpt
 
-# For LLM support (optional)
+# For LLM support
 pip install openai anthropic
+
+# For voice support  
+pip install pyaudio  # macOS: brew install portaudio first
+
+# For live WebSocket streaming
+pip install websockets
 ```
 
 ## 🎮 Quick Start
 
-### Pattern-Based Mode (Offline)
-
+### Basic Query Mode
 ```python
 from waveformgpt import WaveformChat
-
-# Load and query
-chat = WaveformChat("simulation.vcd")
-response = chat.ask("When does clk rise?")
-print(response.content)
-# → Found 1000 rising edges at t=10, 30, 50, 70...
-```
-
-### LLM-Powered Mode (Unlimited Questions)
-
-```python
-from waveformgpt import WaveformChat
-
-# Set your API key
-# export OPENAI_API_KEY="sk-..."
-# OR export ANTHROPIC_API_KEY="sk-ant-..."
 
 chat = WaveformChat("simulation.vcd", use_llm=True)
-
-# Ask ANYTHING!
-chat.ask("What's the clock frequency?")
-chat.ask("Is there a handshake between req and ack?")
-chat.ask("Describe the state machine behavior")
-chat.ask("Find any protocol violations")
-chat.ask("What caused the error flag to trigger?")
+chat.ask("What's the duty cycle of the clock?")
+# → "The duty cycle is 50%. Calculated from 10ns high / 20ns period."
 ```
 
-## 🤖 LLM Backend Options
+### 🎤 Voice Mode (NEW!)
+```python
+from waveformgpt import VoiceChat
 
-### 1. OpenAI (Recommended)
-```bash
-export OPENAI_API_KEY="sk-..."
+# Talk to your waveforms!
+voice = VoiceChat("simulation.vcd")
+voice.start()  # Speak your questions, hear responses!
 ```
-- Best accuracy
-- Fast responses
-- ~$0.01 per complex query
 
-### 2. Anthropic Claude
+### ⚡ Live Streaming Mode (NEW!)
+```python
+from waveformgpt import LiveWaveformAnalyzer
+
+# Monitor a running simulation
+analyzer = LiveWaveformAnalyzer()
+analyzer.connect("file:/path/to/simulation.vcd")  # Watch VCD file
+# Or: analyzer.connect("ws://localhost:8765")      # WebSocket
+# Or: analyzer.connect("sigrok://fx2lafw")         # Logic analyzer
+
+# Set up alerts
+analyzer.add_alert("error_detected", "error == '1'")
+analyzer.add_alert("timeout", "req == '1' and ack == '0'")
+
+analyzer.start()
+
+# Query live data
+analyzer.ask("What's happening right now?")
+```
+
+## 🎤 Voice Interface
+
+Talk to your waveforms hands-free!
+
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
+# Start voice session
+python demo/voice_demo.py
+
+# Or in code:
+from waveformgpt import start_voice_session
+start_voice_session("simulation.vcd")
+```
+
+**Voice Commands:**
+- "What's the clock frequency?"
+- "Describe the handshake protocol"
+- "Are there any errors?"
+- "Quit" (to exit)
+
+## ⚡ Live Waveform Sources
+
+| Source | URI Format | Use Case |
+|--------|------------|----------|
+| VCD File | `file:/path/to.vcd` | Watch simulation output |
+| Named Pipe | `fifo:/tmp/pipe` | Custom integrations |
+| WebSocket | `ws://host:port` | Browser/remote tools |
+| Sigrok | `sigrok://driver` | Logic analyzers |
+
+### Example: Live Simulation Monitoring
+
+```python
+from waveformgpt import LiveWaveformAnalyzer
+
+analyzer = LiveWaveformAnalyzer()
+analyzer.connect("file:/tmp/sim.vcd")
+
+# Alert when something goes wrong
+analyzer.add_alert("bus_error", "error == '1'")
+analyzer.add_alert("stall", "valid == '1' and ready == '0'")
+
+# Callback on any update
+def on_update(signal, time, value):
+    if signal == "state" and value == "ERROR":
+        print(f"State machine error at t={time}!")
+
+analyzer.on_update(on_update)
+analyzer.start()
 ```
 - Excellent reasoning
 - Good at explanations

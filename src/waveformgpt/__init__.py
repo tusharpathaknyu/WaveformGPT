@@ -66,7 +66,31 @@ try:
 except ImportError:
     _HAS_LLM = False
 
-__version__ = "0.3.0"
+# Optional Voice imports (require pyaudio)
+try:
+    from waveformgpt.voice import (
+        VoiceChat,
+        VoiceConfig,
+        SpeechToText,
+        TextToSpeech,
+        AudioRecorder,
+        start_voice_session,
+    )
+    _HAS_VOICE = True
+except ImportError:
+    _HAS_VOICE = False
+
+# Live waveform streaming
+from waveformgpt.live import (
+    LiveWaveformAnalyzer,
+    LiveWaveformBuffer,
+    VCDFileWatcher,
+    FIFOSource,
+    WebSocketSource,
+    create_live_session,
+)
+
+__version__ = "0.4.0"
 __all__ = [
     # Core
     "WaveformChat",
@@ -121,4 +145,18 @@ __all__ = [
     "OllamaBackend",
     "get_llm_backend",
     "LLMResponse",
+    # Voice (optional)
+    "VoiceChat",
+    "VoiceConfig",
+    "SpeechToText",
+    "TextToSpeech",
+    "AudioRecorder",
+    "start_voice_session",
+    # Live Streaming
+    "LiveWaveformAnalyzer",
+    "LiveWaveformBuffer",
+    "VCDFileWatcher",
+    "FIFOSource",
+    "WebSocketSource",
+    "create_live_session",
 ]
