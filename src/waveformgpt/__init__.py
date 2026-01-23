@@ -3,6 +3,11 @@ WaveformGPT - Query simulation waveforms in natural language.
 
 A powerful toolkit for analyzing digital waveforms using natural language
 queries, temporal assertions, protocol checking, and visualization.
+
+v2.0 adds:
+- Oscilloscope image extraction
+- DSP-based waveform analysis
+- Circuit optimization via Bayesian optimization
 """
 
 from waveformgpt.chat import WaveformChat
@@ -151,7 +156,51 @@ try:
 except ImportError:
     _HAS_BUDDY = False
 
-__version__ = "0.6.0"
+# Circuit Optimizer v2.0 (DSP + Bayesian Optimization)
+try:
+    from waveformgpt.circuit_optimizer import (
+        CircuitOptimizer,
+        DSPAnalyzer,
+        RuleBasedDiagnostic,
+        WaveformFeatures,
+        CircuitFix,
+        WaveformProblem,
+    )
+    from waveformgpt.spice_simulator import (
+        CircuitSimulator,
+        AnalyticalSimulator,
+        format_component,
+    )
+    from waveformgpt.waveformgpt_v2 import WaveformGPT as WaveformGPTv2
+    _HAS_CIRCUIT_OPTIMIZER = True
+except ImportError:
+    _HAS_CIRCUIT_OPTIMIZER = False
+
+# Image Extractor (requires OpenCV)
+try:
+    from waveformgpt.image_extractor import (
+        WaveformImageExtractor,
+        QuickExtractor,
+        ExtractedWaveform,
+    )
+    _HAS_IMAGE_EXTRACTOR = True
+except ImportError:
+    _HAS_IMAGE_EXTRACTOR = False
+
+# CNN Classifier (requires numpy, optional PyTorch)
+try:
+    from waveformgpt.waveform_cnn import (
+        WaveformClassifier,
+        WaveformClass,
+        ClassificationResult,
+        NumpyWaveformClassifier,
+        SyntheticDataGenerator,
+    )
+    _HAS_CNN = True
+except ImportError:
+    _HAS_CNN = False
+
+__version__ = "2.0.0"
 __all__ = [
     # Core
     "WaveformChat",
@@ -256,4 +305,25 @@ __all__ = [
     "Capture",
     "CaptureType",
     "ESP32Bridge",
+    # v2.0 Circuit Optimizer
+    "CircuitOptimizer",
+    "DSPAnalyzer",
+    "RuleBasedDiagnostic",
+    "WaveformFeatures",
+    "CircuitFix",
+    "WaveformProblem",
+    "CircuitSimulator",
+    "AnalyticalSimulator",
+    "format_component",
+    "WaveformGPTv2",
+    # v2.0 Image Extraction
+    "WaveformImageExtractor",
+    "QuickExtractor",
+    "ExtractedWaveform",
+    # v2.0 CNN Classifier
+    "WaveformClassifier",
+    "WaveformClass",
+    "ClassificationResult",
+    "NumpyWaveformClassifier",
+    "SyntheticDataGenerator",
 ]

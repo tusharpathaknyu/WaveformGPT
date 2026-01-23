@@ -730,6 +730,18 @@ class ESP32Bridge:
                 elif self.path == '/audio':
                     # Process raw audio from ESP32
                     sample_rate = int(self.headers.get('X-Sample-Rate', 16000))
+                    bits_per_sample = int(self.headers.get('X-Bits-Per-Sample', 16))
+                    
+                    # Convert 32-bit I2S data to 16-bit PCM if needed
+                    import struct
+                    if bits_per_sample == 32 or len(post_data) % 4 == 0:
+                        # INMP441 sends 32-bit samples, convert to 16-bit
+                        samples_32 = struct.unpack(f'<{len(post_data)//4}i', post_data)
+                        # Take upper 16 bits (INMP441 puts data in upper bits)
+                        samples_16 = [max(-32768, min(32767, s >> 16)) for s in samples_32]
+                        audio_data = struct.pack(f'<{len(samples_16)}h', *samples_16)
+                    else:
+                        audio_data = post_data
                     
                     # Convert raw audio to WAV for Whisper
                     wav_buffer = io.BytesIO()
@@ -737,7 +749,7 @@ class ESP32Bridge:
                         wf.setnchannels(1)
                         wf.setsampwidth(2)  # 16-bit
                         wf.setframerate(sample_rate)
-                        wf.writeframes(post_data)
+                        wf.writeframes(audio_data)
                     
                     wav_buffer.seek(0)
                     
