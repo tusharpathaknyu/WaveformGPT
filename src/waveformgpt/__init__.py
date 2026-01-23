@@ -256,7 +256,49 @@ try:
 except ImportError:
     _HAS_ADVANCED = False
 
-__version__ = "2.1.0"
+# Data Pipeline v2.2 (collection, labeling, dataset)
+try:
+    from waveformgpt.data_pipeline import (
+        DataPipeline,
+        DatasetManager,
+        WaveformSample,
+        ProblemLabel,
+        ConfidenceLevel,
+        WaveformSource,
+        ESP32Collector,
+        ActiveLearner,
+        DatasetStats,
+    )
+    _HAS_DATA_PIPELINE = True
+except ImportError:
+    _HAS_DATA_PIPELINE = False
+
+# Community Dataset v2.2 (shareable, versioned)
+try:
+    from waveformgpt.community_dataset import (
+        CommunityDataset,
+        CommunityDatasetBuilder,
+        ContributionManager,
+        BenchmarkRunner,
+    )
+    _HAS_COMMUNITY = True
+except ImportError:
+    _HAS_COMMUNITY = False
+
+# Oscilloscope Integration v2.2 (Rigol, Tektronix, etc.)
+try:
+    from waveformgpt.oscilloscope import (
+        Oscilloscope,
+        RigolOscilloscope,
+        TektronixOscilloscope,
+        WaveformCapture,
+        OscilloscopeDataCollector,
+    )
+    _HAS_OSCILLOSCOPE = True
+except ImportError:
+    _HAS_OSCILLOSCOPE = False
+
+__version__ = "2.2.0"
 __all__ = [
     # Core
     "WaveformChat",
@@ -410,4 +452,25 @@ __all__ = [
     "WaveletDecomposition",
     "PatternMatcher",
     "StatisticalAnalysis",
+    # v2.2 Data Pipeline
+    "DataPipeline",
+    "DatasetManager",
+    "WaveformSample",
+    "ProblemLabel",
+    "ConfidenceLevel",
+    "WaveformSource",
+    "ESP32Collector",
+    "ActiveLearner",
+    "DatasetStats",
+    # v2.2 Community Dataset
+    "CommunityDataset",
+    "CommunityDatasetBuilder",
+    "ContributionManager",
+    "BenchmarkRunner",
+    # v2.2 Oscilloscope Integration
+    "Oscilloscope",
+    "RigolOscilloscope",
+    "TektronixOscilloscope",
+    "WaveformCapture",
+    "OscilloscopeDataCollector",
 ]
