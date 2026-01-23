@@ -200,7 +200,63 @@ try:
 except ImportError:
     _HAS_CNN = False
 
-__version__ = "2.0.0"
+# Enhanced CNN v2.1 (ResNet + Attention)
+try:
+    from waveformgpt.enhanced_cnn import (
+        EnhancedWaveformCNN,
+        EnhancedWaveformClassifier,
+        WaveformAugmentor,
+        ResidualBlock,
+        SelfAttention1D,
+        MultiScaleConv,
+    )
+    _HAS_ENHANCED_CNN = True
+except ImportError:
+    _HAS_ENHANCED_CNN = False
+
+# Database storage v2.1
+try:
+    from waveformgpt.database import (
+        WaveformDatabase,
+        WaveformRecord,
+        AnalysisRecord,
+    )
+    _HAS_DATABASE = True
+except ImportError:
+    _HAS_DATABASE = False
+
+# Local LLM v2.1 (Ollama integration)
+try:
+    from waveformgpt.local_llm import (
+        WaveformLLM as LocalWaveformLLM,
+        OllamaClient,
+        RuleBasedExplainer,
+    )
+    _HAS_LOCAL_LLM = True
+except ImportError:
+    _HAS_LOCAL_LLM = False
+
+# Advanced Analysis v2.1 (frequency, anomaly, trend)
+try:
+    from waveformgpt.advanced_analysis import (
+        AdvancedAnalyzer,
+        FrequencyAnalyzer,
+        FrequencyAnalysis,
+        SpectrogramResult,
+        AnomalyDetector,
+        AnomalyResult,
+        TrendAnalyzer,
+        TrendAnalysis,
+        WaveletAnalyzer,
+        WaveletDecomposition,
+        PatternMatcher,
+        StatisticalAnalysis,
+    )
+    _HAS_ADVANCED = True
+except ImportError:
+    _HAS_ADVANCED = False
+
+__version__ = "2.1.0"
 __all__ = [
     # Core
     "WaveformChat",
@@ -326,4 +382,32 @@ __all__ = [
     "ClassificationResult",
     "NumpyWaveformClassifier",
     "SyntheticDataGenerator",
+    # v2.1 Enhanced CNN
+    "EnhancedWaveformCNN",
+    "EnhancedWaveformClassifier",
+    "WaveformAugmentor",
+    "ResidualBlock",
+    "SelfAttention1D",
+    "MultiScaleConv",
+    # v2.1 Database
+    "WaveformDatabase",
+    "WaveformRecord",
+    "AnalysisRecord",
+    # v2.1 Local LLM
+    "LocalWaveformLLM",
+    "OllamaClient",
+    "RuleBasedExplainer",
+    # v2.1 Advanced Analysis
+    "AdvancedAnalyzer",
+    "FrequencyAnalyzer",
+    "FrequencyAnalysis",
+    "SpectrogramResult",
+    "AnomalyDetector",
+    "AnomalyResult",
+    "TrendAnalyzer",
+    "TrendAnalysis",
+    "WaveletAnalyzer",
+    "WaveletDecomposition",
+    "PatternMatcher",
+    "StatisticalAnalysis",
 ]
